@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public class BucketDtos {
 
-    /** Desktop -> server: publish a profile as a bucket. Just identity, no event data yet. */
+    /** Desktop -> server: publish a profile as a bucket. Just identity, no event data. */
     public record CreateBucketRequest(
             @NotBlank String name,
             @NotBlank String mode,          // "V1" | "V2"
@@ -16,35 +16,26 @@ public class BucketDtos {
             String departmentLabel
     ) {}
 
-    /** Event metadata for whichever receiving session is currently active, if any. */
-    public record EventMetaResponse(
-            String eventName, String eventDate, String loginTimeLimit,
-            boolean hasLogout, String filterJson
-    ) {}
-
-    /** Desktop's own view of one of its buckets (includes status, no key). */
+    /** Desktop's own view of one of its buckets. No event data here —
+     *  a bucket never carries any; see BatchDtos.EventMetaDto for where
+     *  event metadata actually lives (attached to each upload). */
     public record BucketResponse(
-            Long id, String name, String mode, String departmentLabel, String status,
-            EventMetaResponse activeEventMeta
+            Long id, String name, String mode, String departmentLabel, String status
     ) {}
 
     /** What Android sees in discovery — only RECEIVING buckets, never a key. */
     public record DiscoverBucketResponse(
-            Long id, String name, String mode, String departmentLabel,
-            EventMetaResponse eventMeta
+            Long id, String name, String mode, String departmentLabel
     ) {}
 
-    /** Desktop -> server: open a bucket for receiving, i.e. start a new session. */
-    public record OpenReceivingRequest(
-            @NotBlank String eventName, String eventDate, String loginTimeLimit,
-            boolean hasLogout, String filterJson
-    ) {}
-
+    /** Desktop -> server: bare toggle, OFF -> RECEIVING. No body needed —
+     *  opening a bucket doesn't decide anything about an event, Android
+     *  does that entirely on its own once it's scanning. */
     public record OpenReceivingResponse(Long sessionId, String key) {}
 
     public record VerifyKeyRequest(@NotBlank String key) {}
 
-    public record VerifyKeyResponse(boolean valid, Long sessionId, EventMetaResponse eventMeta, boolean rosterAvailable) {}
+    public record VerifyKeyResponse(boolean valid, Long sessionId, boolean rosterAvailable) {}
 
     /** Desktop -> server: publish/replace the student-list CSV for a bucket. */
     public record UploadRosterRequest(@NotBlank String csv) {}

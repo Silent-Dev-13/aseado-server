@@ -61,17 +61,17 @@ public class BucketService {
         buckets.delete(b);
     }
 
-    /** Flip OFF -> RECEIVING: opens a fresh session with its own event metadata and key. */
+    /** Flip OFF -> RECEIVING: bare toggle, generates a fresh key. No event
+     *  metadata taken here — Android decides the event entirely on its
+     *  own and sends it along with the batch upload instead. */
     @Transactional
-    public ReceivingSession openReceiving(Long id, OpenReceivingRequest req) {
+    public ReceivingSession openReceiving(Long id) {
         Bucket b = get(id);
         if (b.getStatus() == BucketStatus.RECEIVING) {
             throw ApiException.conflict("Bucket is already receiving — close it before opening a new session");
         }
         String key = generateKey();
-        ReceivingSession session = new ReceivingSession(
-                b.getId(), key, req.eventName(), req.eventDate(),
-                req.loginTimeLimit(), req.hasLogout(), req.filterJson());
+        ReceivingSession session = new ReceivingSession(b.getId(), key);
         sessions.save(session);
         b.setStatus(BucketStatus.RECEIVING);
         buckets.save(b);

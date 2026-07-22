@@ -7,6 +7,7 @@ import com.np.aseado_server.bucket.BucketService;
 import com.np.aseado_server.exception.ApiException;
 import com.np.aseado_server.session.ReceivingSession;
 import com.np.aseado_server.session.ReceivingSessionRepository;
+import com.np.aseado_server.web.dto.BatchDtos.EventMetaDto;
 import com.np.aseado_server.web.dto.BatchDtos.ScanRecordDto;
 import com.np.aseado_server.web.dto.BatchDtos.UploadBatchRequest;
 import org.springframework.stereotype.Service;
@@ -37,10 +38,20 @@ public class BatchService {
         if (!session.getAccessKey().equals(req.key())) {
             throw ApiException.unauthorized("Invalid or expired key for this bucket");
         }
+        if (req.eventMeta() == null) {
+            throw ApiException.badRequest("eventMeta is required — Android decides the event, not desktop");
+        }
 
         String json = writeRecords(req.records());
-        BatchUpload upload = new BatchUpload(session.getId(), json, req.records().size());
+        EventMetaDto m = req.eventMeta();
+        BatchUpload upload = new BatchUpload(session.getId(), m.eventName(), m.eventDate(),
+                m.loginTimeLimit(), m.hasLogout(), m.filterJson(), json, req.records().size());
         return batches.save(upload);
+    }
+
+    public EventMetaDto eventMetaOf(BatchUpload upload) {
+        return new EventMetaDto(upload.getEventName(), upload.getEventDate(),
+                upload.getLoginTimeLimit(), upload.isHasLogout(), upload.getFilterJson());
     }
 
     /** Desktop pulls everything still pending across every session this bucket has ever had. */

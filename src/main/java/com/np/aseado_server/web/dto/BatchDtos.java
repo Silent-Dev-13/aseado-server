@@ -7,6 +7,19 @@ import java.util.List;
 public class BatchDtos {
 
     /**
+     * The event Android decided on its own, entirely offline — name,
+     * date, login cutoff, filters, whether logout is enabled. Bundled
+     * into the batch upload rather than desktop pre-deciding it, since
+     * there's often no desktop around to ask when this gets created.
+     * Mirrors desktop's own CreateEventRequest shape 1:1 so accepting a
+     * batch can create the local event with zero translation.
+     */
+    public record EventMetaDto(
+            @NotBlank String eventName, String eventDate, String loginTimeLimit,
+            boolean hasLogout, String filterJson
+    ) {}
+
+    /**
      * One scanned student, as Android assembled it locally. loginTime is
      * required (every record represents at least a login); logoutTime is
      * optional (present only if the same ID was scanned again on the
@@ -30,6 +43,7 @@ public class BatchDtos {
     /** Android -> server: upload a completed batch into the currently open session. */
     public record UploadBatchRequest(
             @NotBlank String key,
+            EventMetaDto eventMeta,
             @NotEmpty List<ScanRecordDto> records
     ) {}
 
@@ -38,7 +52,7 @@ public class BatchDtos {
     /** Desktop -> server: what's waiting to be reviewed for a bucket. */
     public record PendingBatchResponse(
             Long batchId, Long sessionId, String uploadedAt,
-            List<ScanRecordDto> records
+            EventMetaDto eventMeta, List<ScanRecordDto> records
     ) {}
 
     public record BatchActionResponse(Long batchId, String status) {}

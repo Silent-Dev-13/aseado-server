@@ -50,9 +50,12 @@ public class BucketController {
         service.delete(id);
     }
 
+    /** Bare toggle — no body. Opening a bucket doesn't decide anything
+     *  about an event; Android does that entirely on its own once it's
+     *  actually scanning, and sends it along with the batch upload. */
     @PostMapping("/{id}/open")
-    public OpenReceivingResponse open(@PathVariable Long id, @Valid @RequestBody OpenReceivingRequest req) {
-        ReceivingSession session = service.openReceiving(id, req);
+    public OpenReceivingResponse open(@PathVariable Long id) {
+        ReceivingSession session = service.openReceiving(id);
         return new OpenReceivingResponse(session.getId(), session.getAccessKey());
     }
 
@@ -66,20 +69,19 @@ public class BucketController {
 
     @GetMapping("/discover")
     public List<DiscoverBucketResponse> discover() {
-        return service.listReceiving().stream().map(b -> {
-            EventMetaResponse meta = service.activeSession(b.getId()).map(this::toEventMeta).orElse(null);
-            return new DiscoverBucketResponse(b.getId(), b.getName(), b.getMode(), b.getDepartmentLabel(), meta);
-        }).toList();
+        return service.listReceiving().stream()
+                .map(b -> new DiscoverBucketResponse(b.getId(), b.getName(), b.getMode(), b.getDepartmentLabel()))
+                .toList();
     }
 
     @PostMapping("/{id}/verify-key")
     public VerifyKeyResponse verifyKey(@PathVariable Long id, @Valid @RequestBody VerifyKeyRequest req) {
         Optional<ReceivingSession> match = service.verifyKey(req.key())
                 .filter(s -> s.getBucketId().equals(id));
-        if (match.isEmpty()) return new VerifyKeyResponse(false, null, null, false);
+        if (match.isEmpty()) return new VerifyKeyResponse(false, null, false);
         Bucket b = service.get(id);
         boolean rosterAvailable = b.getRosterCsv() != null && !b.getRosterCsv().isBlank();
-        return new VerifyKeyResponse(true, match.get().getId(), toEventMeta(match.get()), rosterAvailable);
+        return new VerifyKeyResponse(true, match.get().getId(), rosterAvailable);
     }
 
     // ── Roster: desktop publishes it (admin key), Android pulls it (bucket key) ──
@@ -99,13 +101,6 @@ public class BucketController {
     // ── mapping helpers ──
 
     private BucketResponse toResponse(Bucket b) {
-        EventMetaResponse meta = service.activeSession(b.getId()).map(this::toEventMeta).orElse(null);
-        return new BucketResponse(b.getId(), b.getName(), b.getMode(), b.getDepartmentLabel(),
-                b.getStatus().name(), meta);
-    }
-
-    private EventMetaResponse toEventMeta(ReceivingSession s) {
-        return new EventMetaResponse(s.getEventName(), s.getEventDate(), s.getLoginTimeLimit(),
-                s.isHasLogout(), s.getFilterJson());
+        return new BucketResponse(b.getId(), b.getName(), b.getMode(), b.getDepartmentLabel(), b.getStatus().name());
     }
 }

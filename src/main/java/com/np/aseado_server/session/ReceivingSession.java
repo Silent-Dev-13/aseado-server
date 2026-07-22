@@ -5,10 +5,13 @@ import java.time.Instant;
 
 /**
  * One "receiving cycle" for a bucket — created the moment a desktop admin
- * flips a bucket OFF -> RECEIVING, and it owns everything specific to
- * that cycle: the event metadata (mirrors the desktop's own
- * CreateEventRequest shape: name, date, login cutoff, filters, whether
- * logout is enabled) and a freshly-generated key.
+ * flips a bucket OFF -> RECEIVING. Deliberately carries NO event metadata
+ * — that was an earlier design mistake (desktop pre-deciding the event
+ * before any scanning happened). The real flow: Android decides the
+ * event entirely on its own, offline, and sends its metadata *with the
+ * batch upload* (see BatchUpload) — this session is just a bare
+ * key-with-a-lifetime that gates discovery/roster-download/upload while
+ * it's open.
  *
  * The key is session-lived, not single-use: it stays valid for every
  * upload Android makes for as long as this session is open, and stops
@@ -31,17 +34,6 @@ public class ReceivingSession {
     @Column(nullable = false, unique = true)
     private String accessKey;
 
-    // ── Event metadata for this cycle (mirrors desktop's CreateEventRequest) ──
-    @Column(nullable = false)
-    private String eventName;
-
-    private String eventDate;          // ISO date string, desktop's own format
-    private String loginTimeLimit;     // ISO datetime string, nullable = no cutoff
-    private boolean hasLogout;
-
-    @Lob
-    private String filterJson;         // same shape as desktop's event filterJson
-
     @Column(nullable = false, updatable = false)
     private Instant openedAt = Instant.now();
 
@@ -49,15 +41,9 @@ public class ReceivingSession {
 
     protected ReceivingSession() {} // JPA
 
-    public ReceivingSession(Long bucketId, String accessKey, String eventName, String eventDate,
-                             String loginTimeLimit, boolean hasLogout, String filterJson) {
+    public ReceivingSession(Long bucketId, String accessKey) {
         this.bucketId = bucketId;
         this.accessKey = accessKey;
-        this.eventName = eventName;
-        this.eventDate = eventDate;
-        this.loginTimeLimit = loginTimeLimit;
-        this.hasLogout = hasLogout;
-        this.filterJson = filterJson;
     }
 
     public boolean isOpen() { return closedAt == null; }
@@ -66,11 +52,6 @@ public class ReceivingSession {
     public Long getId() { return id; }
     public Long getBucketId() { return bucketId; }
     public String getAccessKey() { return accessKey; }
-    public String getEventName() { return eventName; }
-    public String getEventDate() { return eventDate; }
-    public String getLoginTimeLimit() { return loginTimeLimit; }
-    public boolean isHasLogout() { return hasLogout; }
-    public String getFilterJson() { return filterJson; }
     public Instant getOpenedAt() { return openedAt; }
     public Instant getClosedAt() { return closedAt; }
 }

@@ -34,7 +34,8 @@ public class BatchController {
     public List<PendingBatchResponse> pending(@PathVariable Long id) {
         return service.pendingFor(id).stream()
                 .map(b -> new PendingBatchResponse(
-                        b.getId(), b.getSessionId(), b.getUploadedAt().toString(), service.readRecords(b)))
+                        b.getId(), b.getSessionId(), b.getUploadedAt().toString(),
+                        service.eventMetaOf(b), service.readRecords(b)))
                 .toList();
     }
 

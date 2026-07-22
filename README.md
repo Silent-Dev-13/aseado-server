@@ -19,9 +19,20 @@ contain any attendance/scan business logic — that stays on desktop
 ```
 Bucket              — permanent profile identity (name, mode, department,
                        roster CSV — see "Roster sync" below)
- └─ ReceivingSession — one open-for-scanning cycle (event metadata + key)
-     └─ BatchUpload  — one Android upload, holds raw JSON scan records
+ └─ ReceivingSession — one open-for-scanning cycle: just a key with a
+                       lifetime, carries NO event data
+     └─ BatchUpload  — one Android upload: the event Android decided on
+                       its own (name, date, cutoff, filters, logout
+                       enabled) + the scan records, bundled together
 ```
+
+**Important correction from an earlier version of this design:** opening
+a bucket for receiving does NOT create an event, and doesn't take any
+event metadata at all — it's a bare toggle. Android decides the event
+entirely on its own, offline, and sends that decision *with the batch
+upload* (`UploadBatchRequest.eventMeta`). Desktop only creates the actual
+local event once it accepts a batch, built from whatever Android sent —
+this server never invents or pre-supplies event data itself.
 
 A bucket can be opened/closed many times over its life; each open is a
 fresh `ReceivingSession` with its own key, so an old session's key stops
@@ -36,7 +47,8 @@ parses it, same as `filterJson`) and is only downloadable by Android while
 a session is actually open, using the session's key:
 
 1. Desktop publishes/replaces the roster: `POST /api/buckets/{id}/roster`
-2. Desktop opens the bucket for receiving (fresh key generated)
+2. Desktop opens the bucket for receiving (fresh key generated) — this is
+   the ON/OFF toggle, nothing else
 3. Android verifies the key, sees `rosterAvailable: true`, downloads it:
    `POST /api/buckets/{id}/roster/download`
 4. Android now has a real source of truth to scan against **entirely
@@ -44,7 +56,11 @@ a session is actually open, using the session's key:
    that doesn't match goes into a separate local "unknown" list with full
    details captured on the spot (name, year, program), kept apart from
    the synced roster so it's never at risk of corrupting it
-5. On upload, unknowns ride along in the batch and land in desktop's
+5. Android decides the event (name/date/cutoff/filters) on its own,
+   whenever it starts an offline scanning session — completely
+   independent of desktop, no round-trip needed
+6. On upload, the event Android decided rides along with the batch
+   (`eventMeta`), and unknowns ride along too, landing in desktop's
    existing "Unknown history" resolve flow, pre-filled with whatever
    Android captured
 
@@ -95,20 +111,13 @@ read directly.
 ```
 POST /api/buckets/3/open
 X-Admin-Key: <your admin key>
-Content-Type: application/json
-
-{
-  "eventName": "Freshmen Orientation",
-  "eventDate": "2026-08-01",
-  "loginTimeLimit": "2026-08-01T08:00:00Z",
-  "hasLogout": true,
-  "filterJson": "{\"years\":[\"1\"],\"programs\":[]}"
-}
 ```
 →
 ```json
 { "sessionId": 12, "key": "K7M9QXWZ" }
 ```
+
+No body — opening doesn't decide anything about an event.
 
 ### Example: Android uploads a batch
 
@@ -118,6 +127,13 @@ Content-Type: application/json
 
 {
   "key": "K7M9QXWZ",
+  "eventMeta": {
+    "eventName": "Freshmen Orientation",
+    "eventDate": "2026-08-01",
+    "loginTimeLimit": "08:00",
+    "hasLogout": true,
+    "filterJson": "{\"years\":[\"1\"],\"programs\":[]}"
+  },
   "records": [
     {
       "studentId": "21-0001",
@@ -130,6 +146,9 @@ Content-Type: application/json
   ]
 }
 ```
+
+Android decided every field in `eventMeta` on its own, offline — desktop
+only sees it once this batch is pulled and accepted.
 
 ## Running it
 
