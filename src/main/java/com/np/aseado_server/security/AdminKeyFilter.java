@@ -53,6 +53,14 @@ public class AdminKeyFilter extends OncePerRequestFilter {
         if ("POST".equals(method) && DOWNLOAD_ROSTER.matcher(path).matches()) return true; // key checked in controller
         return false;
     }
+    
+    private boolean isHealthCheck(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        if ("GET".equals(method) && "/api/health".equals(path)) return true;
+            return false;
+    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -62,6 +70,12 @@ public class AdminKeyFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+                
+                if(isHealthCheck(request)){
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    return;
+                }
+
 
         if (isPublic(request) || adminKey.equals(request.getHeader("X-Admin-Key"))) {
             chain.doFilter(request, response);
