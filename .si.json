@@ -1,0 +1,25 @@
+{
+    
+    
+      "plugin": "org.smartide.plugin.springboot",
+  "run": "sh ./mvnw spring-boot:run",
+  "gui": false,
+  "intelligence": {
+    ".json": {
+      "enabled": true,
+      "run": "vscode-json-language-server --stdio"
+    },
+    ".java": {
+      "enabled": true,
+      "run": "jdtls"
+    },
+    ".properties": {
+      "enabled": false,
+      "run": "lemminx"
+    },
+    ".xml": {
+      "enabled": true,
+      "run": "lemminx"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+services:
+  aseado-server:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      ADMIN_KEY: ${ADMIN_KEY:?set an ADMIN_KEY before running}
+      DATABASE_URL: ${DATABASE_URL:?set your Neon connection string (jdbc:postgresql://...)}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:?set your Neon username}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?set your Neon password}
+    restart: unless-stopped

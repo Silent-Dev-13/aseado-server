@@ -1,0 +1,34 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: aseado-server
+  datasource:
+    # DATABASE_URL/USERNAME/PASSWORD override these for real deployments —
+    # the defaults below are only so local runs work out of the box.
+    # IMPORTANT: rotate this Neon password before shipping anywhere real;
+    # it was shared in plaintext once already.
+    url: ${DATABASE_URL:jdbc:postgresql://ep-muddy-mud-awm2fyfl.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require}
+    username: ${DATABASE_USERNAME:neondb_owner}
+    password: ${DATABASE_PASSWORD:npg_vyNIGc7H5pdL}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# Shared secret the desktop app authenticates with (X-Admin-Key header).
+# Android never sees this — it only ever uses a per-session bucket key.
+# Override in production via the ADMIN_KEY env var; the default below
+# is only here so the server doesn't refuse to boot with nothing set.
+aseado:
+  admin-key: ${ADMIN_KEY:change-me-before-deploying}
+
+logging:
+  level:
+    root: INFO
