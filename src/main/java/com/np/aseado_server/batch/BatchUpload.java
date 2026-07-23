@@ -42,11 +42,10 @@ public class BatchUpload {
     private String loginTimeLimit;
     private boolean hasLogout;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String filterJson;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String recordsJson;
 
     @Column(nullable = false)

@@ -1,9 +1,6 @@
 {
-    
-    
-      "plugin": "org.smartide.plugin.springboot",
+  "plugin": "org.smartide.plugin.springboot",
   "run": "sh ./mvnw spring-boot:run",
-  "gui": false,
   "intelligence": {
     ".json": {
       "enabled": true,
@@ -20,6 +17,10 @@
     ".xml": {
       "enabled": true,
       "run": "lemminx"
+    },
+    ".yaml": {
+      "enabled": true,
+      "run": "yaml-language-server --stdio"
     }
   }
 }

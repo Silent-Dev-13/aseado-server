@@ -48,7 +48,7 @@ public class Bucket {
      * key (see BucketService#downloadRoster), so "no open bucket" still
      * means "no roster available" from Android's point of view.
      */
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String rosterCsv;
 
     @Enumerated(EnumType.STRING)
