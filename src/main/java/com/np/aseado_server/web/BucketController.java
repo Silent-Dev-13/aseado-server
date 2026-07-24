@@ -101,6 +101,21 @@ public class BucketController {
     // ── mapping helpers ──
 
     private BucketResponse toResponse(Bucket b) {
-        return new BucketResponse(b.getId(), b.getName(), b.getMode(), b.getDepartmentLabel(), b.getStatus().name());
+        String activeKey = service.activeSession(b.getId())
+                .map(ReceivingSession::getAccessKey)
+                .orElse(null);
+        boolean rosterUploaded = b.getRosterCsv() != null && !b.getRosterCsv().isBlank();
+        int rosterCount = BucketService.countRows(b.getRosterCsv());
+        
+        return new BucketResponse(
+                b.getId(), 
+                b.getName(), 
+                b.getMode(), 
+                b.getDepartmentLabel(), 
+                b.getStatus().name(),
+                activeKey,
+                rosterUploaded,
+                rosterCount
+        );
     }
 }

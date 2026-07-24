@@ -20,7 +20,8 @@ public class BucketDtos {
      *  a bucket never carries any; see BatchDtos.EventMetaDto for where
      *  event metadata actually lives (attached to each upload). */
     public record BucketResponse(
-            Long id, String name, String mode, String departmentLabel, String status
+            Long id, String name, String mode, String departmentLabel, String status,
+            String activeKey, boolean rosterUploaded, int rosterCount
     ) {}
 
     /** What Android sees in discovery — only RECEIVING buckets, never a key. */
